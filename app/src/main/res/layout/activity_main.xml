@@ -1,0 +1,8 @@
+<fragment xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/movie_poster_fragment"
+    android:name="es.davmartor.popularmovies.MoviePosterFragment"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="es.davmartor.popularmovies.MoviePosterFragment"
+    tools:layout="@layout/fragment_main" />
