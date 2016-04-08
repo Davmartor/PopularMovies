@@ -12,14 +12,16 @@ import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
 
+import butterknife.Bind;
+import butterknife.ButterKnife;
+
 /**
  * Created by david on 6/04/16.
  */
 public class DetailActivity extends ActionBarActivity{
 
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
 
@@ -41,8 +43,7 @@ public class DetailActivity extends ActionBarActivity{
 
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    @Override public boolean onOptionsItemSelected(MenuItem item) {
 
         int id = item.getItemId();
         if (id == R.id.action_settings) {
@@ -60,10 +61,15 @@ public class DetailActivity extends ActionBarActivity{
 
         public DetailFragment() { }
 
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
+        @Bind(R.id.title_movie) TextView movieTitleView;
+        @Bind(R.id.poster_movie) ImageView posterView;
+        @Bind(R.id.plot_movie) TextView movieSynopsisView;
+        @Bind(R.id.rating_movie) TextView movieRatingView;
+        @Bind(R.id.release_date_movie) TextView movieReleaseDateView;
 
+
+        @Override public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                                 Bundle savedInstanceState) {
 
             Bundle arguments = getArguments();
             ParcelableMovie movie = null;
@@ -73,28 +79,16 @@ public class DetailActivity extends ActionBarActivity{
 
             View rootView = inflater.inflate(R.layout.fragment_detail,
                     container, false);
+
+            ButterKnife.bind(this,rootView);
+
             if(movie!=null) {
-
-
-                String movieTitle = movie.title;
-                TextView movieTitleView = (TextView) rootView.findViewById(R.id.title_movie);
-                movieTitleView.setText(movieTitle);
-
-                ImageView posterView = (ImageView) rootView.findViewById(R.id.poster_movie);
+                movieTitleView.setText( movie.title);
                 String url = MoviePosterFragment.IMAGE_POSTER_BASE_URL + movie.posterPath;
                 Picasso.with(getActivity()).load(url).into(posterView);
-
-                String movieSynopsis = movie.synopsis;
-                TextView movieSynopsisView = (TextView) rootView.findViewById(R.id.plot_movie);
-                movieSynopsisView.setText(movieSynopsis);
-
-                String movieRating = movie.rating;
-                TextView movieRatingView = (TextView) rootView.findViewById(R.id.rating_movie);
-                movieRatingView.setText(movieRating);
-
-                String movieReleaseDate = movie.releaseDate;
-                TextView movieReleaseDateView = (TextView) rootView.findViewById(R.id.release_date_movie);
-                movieReleaseDateView.setText(movieReleaseDate);
+                movieSynopsisView.setText(movie.synopsis);
+                movieRatingView.setText(movie.rating);
+                movieReleaseDateView.setText(movie.releaseDate);
 
             }
             return rootView;

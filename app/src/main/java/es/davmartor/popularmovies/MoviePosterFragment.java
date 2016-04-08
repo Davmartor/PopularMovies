@@ -32,7 +32,7 @@ import java.net.URL;
 public class MoviePosterFragment extends Fragment  {
 
     private GridView mGridView;
-    private MoviePosterAdapter  mMoviePosterAdapter;
+    private MoviePosterAdapter mMoviePosterAdapter;
 
     public static final  String MOVIE = "es.davmartor.popular_movie.MOVIE";
 

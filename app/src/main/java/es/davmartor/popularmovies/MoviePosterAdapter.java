@@ -10,6 +10,9 @@ import android.widget.ImageView;
 
 import com.squareup.picasso.Picasso;
 
+import butterknife.Bind;
+import butterknife.ButterKnife;
+
 /**
  * Created by david on 7/03/16.
  */
@@ -43,9 +46,11 @@ public class MoviePosterAdapter extends CursorAdapter {
     }
 
     public static class ViewHolder{
-        public final ImageView posterView;
+        @Bind(R.id.movie_poster_image)
+        ImageView posterView;
+
         public ViewHolder(View view){
-            posterView = (ImageView) view.findViewById(R.id.movie_poster_image);
+            ButterKnife.bind(this,view);
 
         }
 
