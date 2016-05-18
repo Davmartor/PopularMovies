@@ -37,23 +37,8 @@ public class ResponseJSON {
             this.page = page;
         }
 
-        /**
-         *
-         * @return
-         * The results
-         */
-        public List<Result> getResults() {
-            return results;
-        }
 
-        /**
-         *
-         * @param results
-         * The results
-         */
-        public void setResults(List<Result> results) {
-            this.results = results;
-        }
+
 
         /**
          *
@@ -99,5 +84,12 @@ public class ResponseJSON {
             this.additionalProperties.put(name, value);
         }
 
+    public List<Result> getResults() {
+        return results;
     }
+
+    public void setResults(List<Result> results) {
+        this.results = results;
+    }
+}
 

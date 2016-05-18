@@ -1,30 +1,23 @@
 package es.davmartor.popularmovies;
 
-import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.MatrixCursor;
-import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.GridView;
+import android.widget.Toast;
 
-import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -57,7 +50,40 @@ public class MoviePosterFragment extends Fragment  {
 
         //create the adapter and fill the Gridview with the cursor
         mMoviePosterAdapter = new MoviePosterAdapter(getActivity(), null ,0);
-        updateMovies();
+        //updateMovies();
+
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("http://api.themoviedb.org")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        RestMovieApi restMovieApi = retrofit.create(RestMovieApi.class);
+
+        Call<ResponseJSON> call = restMovieApi.getMovie("popular", BuildConfig.THE_MOVIE_DB_API_KEY);
+
+        final ResponseJSON[] responseJSON = {new ResponseJSON()};
+
+        call.enqueue(
+                new Callback<ResponseJSON>() {
+                    @Override
+                    public void onResponse(Call<ResponseJSON> call, Response<ResponseJSON> response) {
+
+                        responseJSON[0] = response.body();
+
+                    }
+
+                    @Override
+                    public void onFailure(Call<ResponseJSON> call, Throwable t) {
+
+                    }
+                }
+        );
+
+        if(responseJSON!=null) {
+            Toast.makeText(getActivity(), responseJSON.toString(), Toast.LENGTH_LONG).show();
+        }
+
 
         mGridView = (GridView) rootView.findViewById(R.id.gridview_movie_poster);
         mGridView.setAdapter(mMoviePosterAdapter);
@@ -103,7 +129,7 @@ public class MoviePosterFragment extends Fragment  {
         super.onSaveInstanceState(outState);
     }
 
-
+/*
     private AsyncTask<String, Void, Cursor> updateMovies() {
         return new FetchMovieTask(getActivity()).execute();
     }
@@ -111,11 +137,11 @@ public class MoviePosterFragment extends Fragment  {
     public void onOrderChanged() {
         updateMovies();
     }
-
+*/
 
     /**
      *  Asyncron task to load movies info
-     */
+     *
     public class FetchMovieTask extends AsyncTask<String, Void, Cursor> {
 
         private String LOG_TAG = FetchMovieTask.class.getSimpleName();
@@ -220,7 +246,7 @@ public class MoviePosterFragment extends Fragment  {
          * @param movieJsonStr
          * @return cursor
          * @throws JSONException
-         */
+         *
         private Cursor getMovieDataFromJson(String movieJsonStr) throws JSONException {
 
             //Field to extract from the JSON
@@ -270,5 +296,5 @@ public class MoviePosterFragment extends Fragment  {
             super.onPostExecute(cursor);
             mMoviePosterAdapter.swapCursor(cursor);
         }
-    }
+    }*/
 }

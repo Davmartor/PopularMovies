@@ -60,7 +60,7 @@ public class MainActivity extends ActionBarActivity {
             mf = (MoviePosterFragment) getSupportFragmentManager().findFragmentById(R.id.movie_poster_fragment);
         }
         if(null!=mf){
-            mf.onOrderChanged();
+         //todo   mf.onOrderChanged();
         }
         mOrder = orderBy;
     }
