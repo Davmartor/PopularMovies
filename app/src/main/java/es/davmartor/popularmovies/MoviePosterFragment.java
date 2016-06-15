@@ -1,13 +1,12 @@
 package es.davmartor.popularmovies;
 
-import android.content.Context;
-import android.content.Intent;
 import android.database.Cursor;
-import android.database.MatrixCursor;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,80 +14,98 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.GridView;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import es.davmartor.popularmovies.data.MovieContract;
 
 /**
  * A placeholder fragment containing a simple view.
  */
-public class MoviePosterFragment extends Fragment  {
+public class MoviePosterFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
+
+    private static final int MOVIE_LOADER = 0;
 
     private GridView mGridView;
     private MoviePosterAdapter mMoviePosterAdapter;
 
-    public static final  String MOVIE = "es.davmartor.popular_movie.MOVIE";
+    public static final  String MOVIES = "es.davmartor.popular_movie.MOVIES";
 
     public static final int ID_TITLE = 1;
-    public static final int ID_POSTER = 2;
-    public static final int ID_SYNOPSIS = 3;
-    public static final int ID_RATING = 4;
-    public static final int ID_RELEASE_DATE = 5;
+    public static final int ID_THE_MOVIE_DB_ID = 2;
+    public static final int ID_POSTER = 3;
+    public static final int ID_SYNOPSIS = 4;
+    public static final int ID_RATING = 5;
+    public static final int ID_RELEASE_DATE = 6;
 
     public static final String IMAGE_POSTER_BASE_URL= "http://image.tmdb.org/t/p/w185";
 
     public int mPosition;
     private static final String SELECTED_KEY = "selected_position";
 
+    private static final String[] MOVIE_COLUMNS = {
+            // In this case the id needs to be fully qualified with a table name, since
+            // the content provider joins the location & weather tables in the background
+            // (both have an _id column)
+            // On the one hand, that's annoying.  On the other, you can search the weather table
+            // using the location set by the user, which is only in the Location table.
+            // So the convenience is worth it.
+            MovieContract.MovieEntry.TABLE_NAME + "." + MovieContract.MovieEntry._ID,
+            MovieContract.MovieEntry.COLUMN_TITLE,
+            MovieContract.MovieEntry.COLUMN_THE_MOVIE_DB_ID,
+            MovieContract.MovieEntry.COLUMN_POSTER_PATH,
+            MovieContract.MovieEntry.COLUMN_SYNOPSIS,
+            MovieContract.MovieEntry.COLUMN_RATING,
+            MovieContract.MovieEntry.COLUMN_RELEASE_DATE
+    };
+
+
+
+    public interface Callback {
+        public void onItemSelected(Uri dateUri);
+    }
+
     public MoviePosterFragment() { }
+
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
-        View rootView = inflater.inflate(R.layout.fragment_main, container, false);
+
+
+        //Cursor cur = getActivity().getContentResolver().query(MovieContract.MovieEntry.CONTENT_URI,
+         //       null, null, null, null);
 
         //create the adapter and fill the Gridview with the cursor
         mMoviePosterAdapter = new MoviePosterAdapter(getActivity(), null ,0);
-        updateMovies();
+
+        View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
         mGridView = (GridView) rootView.findViewById(R.id.gridview_movie_poster);
         mGridView.setAdapter(mMoviePosterAdapter);
+
+
+
+
+
+
 
         //Config click event for any movie
         mGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+                Log.d("POSITION", String.valueOf(position));
+
                 Cursor cursor = (Cursor) adapterView.getItemAtPosition(position);
                 if (cursor != null) {
 
-
-                    ParcelableMovie movie = new ParcelableMovie();
-
-                    movie.title = cursor.getString(ID_TITLE);
-                    movie.posterPath = cursor.getString(ID_POSTER);
-                    movie.synopsis = cursor.getString(ID_SYNOPSIS);
-                    movie.rating = cursor.getString(ID_RATING);
-                    movie.releaseDate = cursor.getString(ID_RELEASE_DATE);
-
-                    Intent intent = new Intent(getActivity(), DetailActivity.class);
-
-                    intent.putExtra(MOVIE, movie);
-                    startActivity(intent);
+                    ((Callback) getActivity())
+                            .onItemSelected(MovieContract.MovieEntry.buildMovieUri(
+                                     cursor.getLong(ID_THE_MOVIE_DB_ID)
+                            ));
                 }
-
                 mPosition = position;
             }
         });
-
-
 
         return rootView;
 
@@ -104,171 +121,44 @@ public class MoviePosterFragment extends Fragment  {
     }
 
 
-    private AsyncTask<String, Void, Cursor> updateMovies() {
-        return new FetchMovieTask(getActivity()).execute();
+    private void updateMovies() {
+        new FetchMovieTask(getActivity()).execute();
     }
 
     public void onOrderChanged() {
         updateMovies();
+        getLoaderManager().restartLoader(MOVIE_LOADER, null, this);
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        getLoaderManager().initLoader(MOVIE_LOADER, null, this);
+        super.onActivityCreated(savedInstanceState);
     }
 
 
-    /**
-     *  Asyncron task to load movies info
-     */
-    public class FetchMovieTask extends AsyncTask<String, Void, Cursor> {
+    @Override
+    public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
 
-        private String LOG_TAG = FetchMovieTask.class.getSimpleName();
+        Uri movieUri = MovieContract.MovieEntry.CONTENT_URI;
 
-        private Context mContext;
-
-        public FetchMovieTask(Context context){
-            mContext = context;
-        }
-
-        @Override
-        protected Cursor doInBackground(String... params) {
-
-            // These two need to be declared outside the try/catch
-            // so that they can be closed in the finally block.
-            HttpURLConnection urlConnection = null;
-            BufferedReader reader = null;
-
-            // Will contain the raw JSON response as a string.
-            String movieJsonStr = null;
-
-            try {
-                // Construct the URL for the OpenWeatherMap query
-                // Possible parameters are avaiable at OWM's forecast API page, at
-                // http://openweathermap.org/API#forecast
-                final String MOVIEBD_BASE_URL = "http://api.themoviedb.org/3/movie/";
-                final String APPID_PARAM = "api_key";
-
-
-                String orderSettings = Utility.getPreferredOrder(mContext);
-
-
-
-                Uri builtUri = Uri.parse( MOVIEBD_BASE_URL + orderSettings ).buildUpon()
-
-                        .appendQueryParameter(APPID_PARAM, BuildConfig.THE_MOVIE_DB_API_KEY)
-                        .build();
-
-                URL url = new URL(builtUri.toString());
-
-                Log.v(LOG_TAG, builtUri.toString());
-
-
-                // Create the request to The MovieDB, and open the connection
-                urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setRequestMethod("GET");
-                urlConnection.connect();
-
-                // Read the input stream into a String
-                InputStream inputStream = urlConnection.getInputStream();
-                StringBuffer buffer = new StringBuffer();
-                if (inputStream == null) {
-                    // Nothing to do.
-                    return null;
-                }
-                reader = new BufferedReader(new InputStreamReader(inputStream));
-
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
-                    // But it does make debugging a *lot* easier if you print out the completed
-                    // buffer for debugging.
-                    buffer.append(line + "\n");
-                }
-
-                if (buffer.length() == 0) {
-                    // Stream was empty.  No point in parsing.
-                    return null;
-                }
-                movieJsonStr = buffer.toString();
-
-                Log.v(LOG_TAG, movieJsonStr);
-                return getMovieDataFromJson(movieJsonStr);
-
-            } catch (IOException e) {
-                Log.e(LOG_TAG, "Error ", e);
-                // If the code didn't successfully get the weather data, there's no point in attempting
-                // to parse it.
-            } catch (JSONException e) {
-                Log.e(LOG_TAG, e.getMessage(), e);
-                e.printStackTrace();
-
-            }
-
-            finally {
-                if (urlConnection != null) {
-                    urlConnection.disconnect();
-                }
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (final IOException e) {
-                        Log.e(LOG_TAG, "Error closing stream", e);
-                    }
-                }
-            }
-            return null;
-        }
-
-        /**
-         * Create Cursor from Json movie
-         * @param movieJsonStr
-         * @return cursor
-         * @throws JSONException
-         */
-        private Cursor getMovieDataFromJson(String movieJsonStr) throws JSONException {
-
-            //Field to extract from the JSON
-            final String ARRAY_RESULTS = "results";
-
-            final String MOVIE_ID = "id";
-            final String ORIGINAL_TITLE="original_title";
-            final String POSTER_PATH="poster_path";
-            final String SYNOPSIS="overview";
-            final String USER_RATING="vote_average";
-            final String RELEASE_DATE="release_date";
-
-
-            JSONObject page =  new JSONObject(movieJsonStr);
-            JSONArray moviesArray = page.getJSONArray(ARRAY_RESULTS);
-
-
-            MatrixCursor mc = new MatrixCursor(
-                    new String[]{
-                        "_id",
-                        ORIGINAL_TITLE,
-                        POSTER_PATH,
-                        SYNOPSIS,
-                        USER_RATING,
-                        RELEASE_DATE,
-                        });
-
-            for( int i = 0; i < moviesArray.length(); i++) {
-                JSONObject movie = moviesArray.getJSONObject(i);
-
-                int id = movie.getInt(MOVIE_ID);
-                String title = movie.getString(ORIGINAL_TITLE);
-                String posterPath = movie.getString(POSTER_PATH);
-                String synopsis = movie.getString(SYNOPSIS);
-                String rating = movie.getString(USER_RATING);
-                String releaseDate = movie.getString(RELEASE_DATE);
-
-
-                mc.addRow(new Object[]{id, title, posterPath, synopsis, rating, releaseDate});
-            }
-            return mc;
-
-        }
-
-        @Override
-        protected void onPostExecute(Cursor cursor) {
-            super.onPostExecute(cursor);
-            mMoviePosterAdapter.swapCursor(cursor);
-        }
+        return new CursorLoader(getActivity(),
+                movieUri,
+                MOVIE_COLUMNS,
+                null,
+                null,
+                null);
     }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        mMoviePosterAdapter.swapCursor(data);
+
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        mMoviePosterAdapter.swapCursor(null);
+    }
+
 }

@@ -34,8 +34,13 @@
                 android:value="es.davmartor.popularmovies.MainActivity" />
         </activity>
 
+    <provider
+        android:authorities = "es.davmartor.popularmovies"
+        android:name = ".data.MovieProvider"
+        />
     </application>
     <uses-permission android:name="android.permission.INTERNET">
 
     </uses-permission>
+
 </manifest>

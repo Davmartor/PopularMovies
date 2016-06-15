@@ -1,12 +1,13 @@
 package es.davmartor.popularmovies;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends ActionBarActivity implements MoviePosterFragment.Callback {
 
 
     private String mOrder;
@@ -63,5 +64,14 @@ public class MainActivity extends ActionBarActivity {
             mf.onOrderChanged();
         }
         mOrder = orderBy;
+    }
+
+    @Override
+    public void onItemSelected(Uri contentUri) {
+
+            Intent intent = new Intent(this, DetailActivity.class)
+                    .setData(contentUri);
+            startActivity(intent);
+
     }
 }
