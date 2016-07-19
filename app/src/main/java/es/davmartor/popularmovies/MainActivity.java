@@ -9,8 +9,9 @@ import android.view.MenuItem;
 
 public class MainActivity extends ActionBarActivity implements MoviePosterFragment.Callback {
 
-
+    private static final String DETAILFRAGMENT_TAG = "DFTAG";
     private String mOrder;
+    private boolean mTwoPane;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -18,11 +19,18 @@ public class MainActivity extends ActionBarActivity implements MoviePosterFragme
         setContentView(R.layout.activity_main);
         //show the action bar
         getSupportActionBar().setElevation(0f);
+        if(findViewById(R.id.movie_detail_container)!=null){
+            mTwoPane = true;
 
-        //activate the movie poster fragment
-        if(savedInstanceState == null){
-            getSupportFragmentManager().findFragmentById(R.id.movie_poster_fragment);
+            if(savedInstanceState == null) {
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.movie_detail_container,new DetailFragment())
+                        .commit();
+            }
+        } else {
+            mTwoPane = false;
         }
+
 
 
     }
@@ -68,10 +76,25 @@ public class MainActivity extends ActionBarActivity implements MoviePosterFragme
 
     @Override
     public void onItemSelected(Uri contentUri) {
+        if (mTwoPane){
+            Bundle args = new Bundle();
+            DetailFragment fragment = new DetailFragment();
+
+            args.putParcelable(DetailFragment.MOVIE_DETAILS,contentUri);
+            fragment.setArguments(args);
+
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.movie_detail_container, fragment, DETAILFRAGMENT_TAG)
+                    .commit();
+
+        }else{
 
             Intent intent = new Intent(this, DetailActivity.class)
                     .setData(contentUri);
             startActivity(intent);
+        }
 
     }
+
+
 }

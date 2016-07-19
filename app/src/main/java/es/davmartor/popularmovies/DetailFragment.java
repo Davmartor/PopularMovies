@@ -67,10 +67,7 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
     @Override public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                        Bundle savedInstanceState) {
 
-        Bundle arguments = getArguments();
-        if(arguments!=null){
-            mUri = arguments.getParcelable(DetailFragment.MOVIE_DETAILS);
-        }
+
 
         mRootView = inflater.inflate(R.layout.fragment_detail,
                 container, false);
@@ -90,6 +87,13 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+
+        Bundle arguments = getArguments();
+        if(arguments == null){
+            return null;
+        }
+            mUri = arguments.getParcelable(DetailFragment.MOVIE_DETAILS);
+
         if( null != mUri){
             return new CursorLoader(
                     getActivity(),
@@ -113,11 +117,8 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
             String url = MoviePosterFragment.IMAGE_POSTER_BASE_URL + data.getString(COL_POSTER_PATH);
             Picasso.with(getActivity()).load(url).into(posterView);
 
-
             movieSynopsisView.setText(data.getString(COL_SYNOPSIS));
             movieRatingView.setText(data.getString(COL_RATING));
-            movieReleaseDateView.setText(data.getString(COL_RELEASE_DAT));
-
 
 
         }
@@ -127,4 +128,6 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
     public void onLoaderReset(Loader<Cursor> loader) {
 
     }
+
+
 }
