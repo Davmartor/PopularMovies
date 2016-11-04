@@ -3,6 +3,7 @@ package es.davmartor.popularmovies;
 import android.content.Context;
 import android.database.Cursor;
 import android.support.v4.widget.CursorAdapter;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +19,7 @@ import butterknife.ButterKnife;
  */
 public class MoviePosterAdapter extends CursorAdapter {
 
+    private String LOG_TAG = MoviePosterAdapter.class.getSimpleName();
 
     public MoviePosterAdapter(Context context, Cursor c, int flags) {
         super(context, c, flags);
@@ -41,6 +43,8 @@ public class MoviePosterAdapter extends CursorAdapter {
         ViewHolder viewHolder = (ViewHolder) view.getTag();
 
         String url = MoviePosterFragment.IMAGE_POSTER_BASE_URL + cursor.getString(MoviePosterFragment.ID_POSTER);
+
+        Log.d(LOG_TAG,url);
 
         Picasso.with(context).load(url).into(viewHolder.posterView);
     }
